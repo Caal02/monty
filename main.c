@@ -1,87 +1,103 @@
 #include "monty.h"
 
+
 /**
- * main - monty interperter
- * @ac: the number of arguments
- * @av: the arguments
- * Return: void
- */
-int main(int ac, char *av[])
+* opcode_finder - find opcode
+* @stack: stack pointer
+* @opcode: user input opcode
+* @line_number: line number
+* Return: Always 1 (Success) or stderr
+**/
+int find_opcode(stack_t **stack, char *opcode, int line_number)
 {
-	stack_t *stack = NULL;
-	static char *string[1000] = {NULL};
-	int n = 0;
-	FILE *fd;
-	size_t bufsize = 1000;
+instruction_t opcodes[] = {
+{"pall", pall},
+{"pop", pop},
+{"swap", swap},
+{"pint", pint},
+{NULL, NULL}
+};
 
-	if (ac != 2)
-	{
-		fprintf(stderr, "USAGE: monty file\n");
-		exit(EXIT_FAILURE);
-	}
-	fd = fopen(av[1], "r");
-	if (fd == NULL)
-	{
-		fprintf(stderr, "Error: Can't open file %s\n", av[1]);
-		exit(EXIT_FAILURE);
-	}
+int i;
+
+for (i = 0; opcodes[i].opcode; i++)
+{
+if (strcmp(opcode, opcodes[i].opcode) == 0)
+{
+(opcodes[i].f)(stack, line_number);
+return (EXIT_SUCCESS);
+}
+}
+fprintf(stderr, "L%d: unknown instruction %s\n", line_number, opcode);
+exit(EXIT_FAILURE);
+}
 
 
-	for (n = 0; getline(&(string[n]), &bufsize, fd) > 0; n++)
-		;
-	execute(string, stack);
-	free_list(string);
-	fclose(fd);
-	return (0);
+/**
+* main - Process Monty byte codes from a file passed in as an argument
+* @argc: size of argv
+* @argv: A double pointer contain the arguments
+* Return: EXIT_SUCCESS if no errors or EXIT_FAILURE
+**/
+
+int main(__attribute__((unused)) int argc, char const *argv[])
+{
+FILE *mf;
+char *buff = NULL, *opcode, *n;
+size_t lol = 0;
+int line_number = 0;
+stack_t *stack = NULL, *current;
+
+if (argc != 2)
+{
+fprintf(stderr, "USAGE: monty file\n");
+return (EXIT_FAILURE);
+}
+mf = fopen(argv[1], "r");
+if (mf == NULL)
+{
+fprintf(stderr, "Error: can't open file %s\n", argv[1]);
+exit(1);
+}
+while ((getline(&buff, &lol, mf)) != -1)
+{
+line_number++;
+opcode = strtok(buff, DELIMATOR);
+if (opcode == NULL || opcode[0] == '#')
+continue;
+if (!strcmp(opcode, "nop"))
+continue;
+else if (!strcmp(opcode, "push"))
+{
+n = strtok(NULL, DELIMATOR);
+push(&stack, n, line_number);
+}
+else
+find_opcode(&stack, opcode, line_number);
+}
+fclose(mf);
+free(buff);
+while (stack != NULL)
+{
+current = stack;
+stack = stack->next;
+free(current);
+}
+return (0);
 }
 
 /**
- * execute - executes opcodes
- * @string: contents of file
- * @stack: the list
- * Return: void
- */
-
-void execute(char *string[], stack_t *stack)
+* free_stack - fff
+* @stack: fff
+**/
+void free_stack(stack_t *stack)
 {
-	int ln, n, i;
+stack_t *next;
 
-	instruction_t st[] = {
-		{"pall", pall},
-		{"pint", pint},
-		{"add", add},
-		{"swap", swap},
-		{"pop", pop},
-		{"null", NULL}
-	};
-
-	for (ln = 1, n = 0; string[n + 1]; n++, ln++)
-	{
-		if (_strcmp("push", string[n]))
-			push(&stack, ln, pushint(string[n], ln));
-		else if (_strcmp("nop", string[n]))
-			;
-		else
-		{
-			i = 0;
-			while (!_strcmp(st[i].opcode, "null"))
-			{
-				if (_strcmp(st[i].opcode, string[n]))
-				{
-					st[i].f(&stack, ln);
-					break;
-				}
-				i++;
-			}
-			if (_strcmp(st[i].opcode, "null") && !_strcmp(string[n], "\n"))
-			{
-				fprintf(stderr, "L%u: unknown instruction %s", ln, string[n]);
-				if (!nlfind(string[n]))
-					fprintf(stderr, "\n");
-				exit(EXIT_FAILURE);
-			}
-		}
-	}
-	free_stack(stack);
+while (stack != NULL)
+{
+next = stack->next;
+free(stack);
+stack = next;
 }
-
+}
