@@ -2,7 +2,7 @@
 
 
 /**
-* opcode_finder - find opcode
+* find_opcode - find opcode
 * @stack: stack pointer
 * @opcode: user input opcode
 * @line_number: line number
